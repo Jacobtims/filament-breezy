@@ -9,33 +9,12 @@ use Jeffgreco13\FilamentBreezy\Models\BreezySession;
 
 trait TwoFactorAuthenticatable
 {
-    public static function bootTwoFactorAuthenticatable()
+    public function initializeTwoFactorAuthenticatable(): void
     {
-        static::deleting(function ($model) {
-            $model->breezySessions()->get()->each->delete();
-        });
-    }
-
-    public function initializeTwoFactorAuthenticatable()
-    {
-        $this->with[] = 'breezySessions';
-
         $this->mergeCasts([
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
         ]);
-    }
-
-    public function breezySessions()
-    {
-        return $this->morphMany(BreezySession::class, 'authenticatable');
-    }
-
-    public function breezySession(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => $this->breezySessions->first()
-        );
     }
 
     public function hasEnabledTwoFactor(): bool

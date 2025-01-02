@@ -21,7 +21,6 @@ class FilamentBreezyServiceProvider extends PackageServiceProvider
             ->hasViews()
             ->hasTranslations()
             ->hasMigration('add_two_factor_columns_to_table')
-            ->hasMigration('create_breezy_sessions_table')
             ->hasCommand(Install::class);
     }
 }
