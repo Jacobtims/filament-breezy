@@ -349,9 +349,4 @@ class BreezyCore implements Plugin
     {
         return $this->customMyProfilePageClass ?? Pages\MyProfilePage::class;
     }
-
-    public function getTwoFactorUsersTableName(): string
-    {
-        return 'users';
-    }
 }

@@ -20,7 +20,7 @@ class FilamentBreezyServiceProvider extends PackageServiceProvider
             ->hasRoute('web')
             ->hasViews()
             ->hasTranslations()
-            ->hasMigration('add_two_factor_columns_to_table')
+            ->hasMigration('add_two_factor_columns_to_users_table')
             ->hasCommand(Install::class);
     }
 }
