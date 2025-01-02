@@ -118,7 +118,7 @@ return [
     ],
     'or' => 'Ou',
     'cancel' => 'Annuler',
-    ////
+    // //
     'login' => [
         'username_or_email' => 'Identifiant ou E-mail',
         'forgot_password_link' => 'Mot de passe oublié ?',

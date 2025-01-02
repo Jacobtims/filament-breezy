@@ -19,6 +19,11 @@ trait TwoFactorAuthenticatable
     public function initializeTwoFactorAuthenticatable()
     {
         $this->with[] = 'breezySessions';
+
+        $this->mergeCasts([
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+        ]);
     }
 
     public function breezySessions()
@@ -35,91 +40,78 @@ trait TwoFactorAuthenticatable
 
     public function hasEnabledTwoFactor(): bool
     {
-        return $this->breezySession?->is_enabled ?? false;
+        return ! is_null($this->two_factor_secret);
     }
 
     public function hasConfirmedTwoFactor(): bool
     {
-        return $this->breezySession?->is_confirmed ?? false;
+        return ! is_null($this->two_factor_secret) && ! is_null($this->two_factor_confirmed_at);
     }
 
-    public function twoFactorRecoveryCodes(): Attribute
+    public function enableTwoFactorAuthentication(): void
     {
-        return Attribute::make(
-            get: fn () => $this->breezySession ? json_decode(decrypt(
-                $this->breezySession->two_factor_recovery_codes), true) : null
-        );
-    }
-
-    public function twoFactorSecret(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => $this->breezySession?->two_factor_secret
-        );
-    }
-
-    public function enableTwoFactorAuthentication()
-    {
-        $twoFactorData = [
-            'two_factor_secret' => encrypt(filament('filament-breezy')->getEngine()->generateSecretKey()),
+        $this->update([
+            'two_factor_secret' => filament('filament-breezy')->getEngine()->generateSecretKey(),
             'two_factor_recovery_codes' => $this->generateRecoveryCodes(),
-        ];
-        if ($this->breezy_session) {
-            $this->disableTwoFactorAuthentication(); // Delete the session if it exists.
-        }
-        $this->breezySession = $this->breezySessions()->create($twoFactorData);
-        $this->load('breezySessions');
+        ]);
     }
 
-    public function disableTwoFactorAuthentication()
+    public function disableTwoFactorAuthentication(): void
     {
-        $this->breezySession?->delete();
+        $this->update([
+            'two_factor_secret' => null,
+            'two_factor_recovery_codes' => null,
+            'two_factor_confirmed_at' => null,
+        ]);
     }
 
-    public function confirmTwoFactorAuthentication()
+    public function confirmTwoFactorAuthentication(): void
     {
-        $this->breezySession?->confirm();
+        $this->update([
+            'two_factor_confirmed_at' => now(),
+        ]);
+
         $this->setTwoFactorSession();
     }
 
-    public function setTwoFactorSession(?int $lifetime = null)
+    public function setTwoFactorSession(): void
     {
-        $this->breezySession->setSession($lifetime);
+        session(['breezy_session_id' => md5($this->id)]);
     }
 
     public function hasValidTwoFactorSession(): bool
     {
-        return $this->breezySession?->is_valid ?? false;
+        return session()->has('breezy_session_id') && session('breezy_session_id') == md5($this->id);
     }
 
-    public function generateRecoveryCodes()
+    public function generateRecoveryCodes(): array
     {
-        return encrypt(json_encode(Collection::times(8, function () {
+        return Collection::times(8, function () {
             return Str::random(10).'-'.Str::random(10);
-        })->all()));
+        })->all();
     }
 
     public function destroyRecoveryCode(string $recoveryCode): void
     {
         $unusedCodes = array_filter($this->two_factor_recovery_codes ?? [], fn ($code) => $code !== $recoveryCode);
 
-        $this->breezy_session->forceFill([
-            'two_factor_recovery_codes' => $unusedCodes ? encrypt(json_encode($unusedCodes)) : null,
+        $this->forceFill([
+            'two_factor_recovery_codes' => $unusedCodes ?: null,
         ])->save();
     }
 
-    public function getTwoFactorQrCodeUrl()
+    public function getTwoFactorQrCodeUrl(): string
     {
         return filament('filament-breezy')->getQrCodeUrl(
             config('app.name'),
             $this->email,
-            decrypt($this->breezySession->two_factor_secret)
+            $this->two_factor_secret
         );
     }
 
-    public function reGenerateRecoveryCodes()
+    public function reGenerateRecoveryCodes(): void
     {
-        $this->breezy_session->forceFill([
+        $this->forceFill([
             'two_factor_recovery_codes' => $this->generateRecoveryCodes(),
         ])->save();
     }

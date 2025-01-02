@@ -13,7 +13,6 @@ class TwoFactorAuthentication extends MyProfileComponent
 {
     protected string $view = 'filament-breezy::livewire.two-factor-authentication';
 
-    // public ?array $data = [];
     public $user;
 
     public $code;

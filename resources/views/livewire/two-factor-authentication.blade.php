@@ -62,8 +62,7 @@
                 <div class="flex mt-3 space-x-4 divide-x">
                     <div>
                         {!! $this->getTwoFactorQrCode() !!}
-                        <p class="pt-2 text-sm">{{ __('filament-breezy::default.profile.2fa.setup_key') }} {{
-                            decrypt($this->user->two_factor_secret) }}</p>
+                        <p class="pt-2 text-sm">{{ __('filament-breezy::default.profile.2fa.setup_key') }} {{ $this->user->two_factor_secret }}</p>
                     </div>
                     <div class="px-4 space-y-3">
                         <p class="text-xs">{{ __('filament-breezy::default.profile.2fa.enabled.store_codes') }}</p>

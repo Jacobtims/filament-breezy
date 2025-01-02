@@ -300,7 +300,7 @@ class BreezyCore implements Plugin
         if (is_null($user)) {
             $user = Filament::auth()->user();
         }
-        $secret = decrypt($user->two_factor_secret);
+        $secret = $user->two_factor_secret;
 
         $timestamp = $this->engine->verifyKeyNewer(
             $secret,
@@ -348,5 +348,10 @@ class BreezyCore implements Plugin
     protected function getMyProfilePageClass(): string
     {
         return $this->customMyProfilePageClass ?? Pages\MyProfilePage::class;
+    }
+
+    public function getTwoFactorUsersTableName(): string
+    {
+        return 'users';
     }
 }
