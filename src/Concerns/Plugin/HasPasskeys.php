@@ -12,6 +12,7 @@ use Webauthn\AuthenticatorAssertionResponse;
 use Webauthn\AuthenticatorAssertionResponseValidator;
 use Webauthn\AuthenticatorAttestationResponse;
 use Webauthn\AuthenticatorAttestationResponseValidator;
+use Webauthn\AuthenticatorSelectionCriteria;
 use Webauthn\CeremonyStep\CeremonyStepManagerFactory;
 use Webauthn\Denormalizer\WebauthnSerializerFactory;
 use Webauthn\PublicKeyCredential;
@@ -34,7 +35,9 @@ trait HasPasskeys
 
     protected bool $autoPromptPasskeys = false;
 
-    public function enablePasskeys(bool $condition = true, ?string $relyingPartyName = null, ?string $relyingPartyId = null, ?string $relyingPartyIcon = null, bool $scopeToPanel = true, bool $autoPrompt = false): static
+    protected bool $requirePasskeyUserVerification = false;
+
+    public function enablePasskeys(bool $condition = true, ?string $relyingPartyName = null, ?string $relyingPartyId = null, ?string $relyingPartyIcon = null, bool $scopeToPanel = true, bool $autoPrompt = false, bool $requireUserVerification = false): static
     {
         $this->passkeys = $condition;
         $this->scopePasskeysToPanel = $scopeToPanel;
@@ -42,6 +45,7 @@ trait HasPasskeys
         $this->passkeyRelyingPartyId = $relyingPartyId ?? request()->getHost();
         $this->passkeyRelyingPartyIcon = $relyingPartyIcon;
         $this->autoPromptPasskeys = $autoPrompt;
+        $this->requirePasskeyUserVerification = $requireUserVerification;
 
         return $this;
     }
@@ -69,6 +73,12 @@ trait HasPasskeys
     public function autoPromptPasskeys(): bool
     {
         return $this->autoPromptPasskeys;
+    }
+
+    /** Require the authenticator to verify its user, for example with a PIN or biometrics. */
+    public function requiresPasskeyUserVerification(): bool
+    {
+        return $this->requirePasskeyUserVerification;
     }
 
     public function passkeySerializer(): Serializer
@@ -105,6 +115,9 @@ trait HasPasskeys
             rp: $this->passkeyRelatedPartyEntity(),
             user: $this->passkeyGenerateUserEntity(),
             challenge: Str::random(),
+            authenticatorSelection: $this->requiresPasskeyUserVerification()
+                ? AuthenticatorSelectionCriteria::create(userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED)
+                : null,
         );
 
         return $this->passkeySerializer()->serialize($options, 'json');
@@ -116,6 +129,9 @@ trait HasPasskeys
             challenge: Str::random(),
             rpId: $this->passkeyRelyingPartyId(),
             allowCredentials: [],
+            userVerification: $this->requiresPasskeyUserVerification()
+                ? PublicKeyCredentialRequestOptions::USER_VERIFICATION_REQUIREMENT_REQUIRED
+                : null,
         );
 
         return $this->passkeySerializer()->serialize($options, 'json');
@@ -143,6 +159,12 @@ trait HasPasskeys
     public function passkeyDeterminePublicKeyCredentialSource(string $passkeyJson, string $passkeyOptionsJson, string $hostName): mixed
     {
         $passkeyOptions = $this->getPasskeyOptions($passkeyOptionsJson);
+
+        // The server's policy remains authoritative when options return from the browser.
+        if ($this->requiresPasskeyUserVerification()) {
+            $passkeyOptions->authenticatorSelection ??= AuthenticatorSelectionCriteria::create();
+            $passkeyOptions->authenticatorSelection->userVerification = AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED;
+        }
 
         $publicKeyCredential = $this->getPasskey($passkeyJson);
 
@@ -218,6 +240,11 @@ trait HasPasskeys
             PublicKeyCredentialRequestOptions::class,
             'json',
         );
+
+        // A browser hint alone does not enforce verification of the signed response.
+        if ($this->requiresPasskeyUserVerification()) {
+            $passkeyOptions->userVerification = PublicKeyCredentialRequestOptions::USER_VERIFICATION_REQUIREMENT_REQUIRED;
+        }
 
         $publicKeyCredentialSource = $this->determinePublicKeyCredentialSource(
             $publicKeyCredential,
