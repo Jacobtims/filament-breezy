@@ -507,11 +507,27 @@ Enable passkey authentication using the `enablePasskeys()` method on the Breezy 
 BreezyCore::make()
     ->enablePasskeys( 
         relyingPartyName: 'My App', // optionally, change the passkey's party name (default = APP_NAME)
-        relyingPartyId: 'https://my-app.com', // optionally, change the passkey's party id (default = APP_URL)
+        relyingPartyId: 'my-app.com', // optionally, change the relying party domain (default = request host)
         relyingPartyIcon: '/logo.png', // optionally, change the passkey's party icon 
         scopeToPanel: true, // scope the passkeys only to the current panel (default = true)
+        requireUserVerification: true, // require device PIN or biometric verification (default = false)
     )
 ```
+
+#### Requiring user verification
+
+Set `requireUserVerification: true` to require the authenticator to verify its user
+when registering a passkey and signing in with it. The browser or authenticator
+handles this check, usually through a device PIN, fingerprint, or face recognition.
+Breezy does not collect the PIN or biometric data.
+
+The requirement is enforced when validating the authenticator's response, not only
+sent as a browser option. Existing passkeys can still be used if their authenticator
+supports user verification; a presence-only security key will not satisfy this policy.
+
+The default is `false`, preserving the existing verification behavior. Setting it to
+`false` makes verification optional for Breezy; it does not prevent an authenticator
+or passkey manager from asking the user to verify themselves.
 
 #### Additional Configuration
 If you want to customize the component or modify its behavior, you can override the passkeys component in the myProfileComponents method:
