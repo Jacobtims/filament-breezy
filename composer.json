@@ -21,7 +21,7 @@
         }
     ],
     "require": {
-        "php": "^8.2|^8.3|^8.4",
+        "php": "^8.2",
         "bacon/bacon-qr-code": "^3.0",
         "filament/filament": "^4.0|^5.0",
         "illuminate/contracts": "^12.0|^13.0",
