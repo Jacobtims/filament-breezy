@@ -13,6 +13,10 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Pages\Concerns\InteractsWithFormActions;
 use Filament\Pages\SimplePage;
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Component;
+use Filament\Schemas\Components\EmbeddedSchema;
+use Filament\Schemas\Components\Form;
 use Filament\Schemas\Schema;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Blade;
@@ -89,6 +93,26 @@ class TwoFactorPage extends SimplePage implements HasForms
             ->statePath('data');
     }
 
+    public function content(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                $this->getFormContentComponent(),
+            ]);
+    }
+
+    public function getFormContentComponent(): Component
+    {
+        return Form::make([EmbeddedSchema::make('form')])
+            ->id('form')
+            ->livewireSubmitHandler('authenticate')
+            ->footer([
+                Actions::make($this->getFormActions())
+                    ->fullWidth($this->hasFullWidthFormActions())
+                    ->key('form-actions'),
+            ]);
+    }
+
     public function toggleRecoveryCode()
     {
         $this->resetErrorBag('code');
@@ -123,7 +147,7 @@ class TwoFactorPage extends SimplePage implements HasForms
     protected function getAuthenticateFormAction(): Action
     {
         return Action::make('authenticate')
-            ->label(__('filament-panels::pages/auth/login.form.actions.authenticate.label'))
+            ->label(__('filament-panels::auth/pages/login.form.actions.authenticate.label'))
             ->submit('authenticate');
     }
 
