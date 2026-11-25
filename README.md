@@ -505,13 +505,39 @@ Enable passkey authentication using the `enablePasskeys()` method on the Breezy 
 
 ```php
 BreezyCore::make()
-    ->enablePasskeys( 
-        relyingPartyName: 'My App', // optionally, change the passkey's party name (default = APP_NAME)
-        relyingPartyId: 'https://my-app.com', // optionally, change the passkey's party id (default = APP_URL)
-        relyingPartyIcon: '/logo.png', // optionally, change the passkey's party icon 
-        scopeToPanel: true, // scope the passkeys only to the current panel (default = true)
+    ->enablePasskeys(
+        relyingPartyName: 'My App',    // optional — relying party name shown to the user (default: APP_NAME)
+        relyingPartyId: 'my-app.com',  // optional — relying party ID, must match the browser origin hostname (default: current host)
+        relyingPartyIcon: '/logo.png', // optional — icon URL shown by the authenticator
+        scopeToPanel: true,            // optional — scope passkeys to the current panel only (default: true)
+        autoPrompt: false,             // optional — automatically prompt for passkey on the login page (default: false)
+        residentKey: null,             // optional — controls passkey discoverability (default: no_preference)
+        authenticatorAttachment: null, // optional — restrict to platform or cross-platform authenticators (default: no preference)
+        userVerification: null,        // optional — require user verification (PIN/biometric) during registration and login (default: preferred)
     )
 ```
+
+> **Note on `residentKey`:** For full compatibility with password managers such as Bitwarden or 1Password, set `residentKey` to `RESIDENT_KEY_REQUIREMENT_REQUIRED`. Without this, passkeys may be registered as non-discoverable, meaning password managers cannot find them during authentication. Platform authenticators like Apple Keychain are more lenient and work regardless.
+>
+> Available values:
+> - `AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_REQUIRED` — discoverable, recommended for password manager compatibility
+> - `AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_PREFERRED` — discoverable if supported by the authenticator
+> - `AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_DISCOURAGED` — non-discoverable (hardware keys with limited storage)
+
+> **Note on `authenticatorAttachment`:** Controls whether registration is restricted to a specific authenticator type. Only applies to registration (not login).
+>
+> Available values:
+> - `AuthenticatorSelectionCriteria::AUTHENTICATOR_ATTACHMENT_PLATFORM` — built-in authenticators only (e.g. Apple Keychain, Windows Hello)
+> - `AuthenticatorSelectionCriteria::AUTHENTICATOR_ATTACHMENT_CROSS_PLATFORM` — external authenticators only (e.g. security keys, phones)
+> - `null` — no preference (default)
+
+> **Note on `userVerification`:** Controls whether the authenticator must verify the user (PIN, biometric) during both registration and login.
+>
+> Available values:
+> - `AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED` — verification mandatory
+> - `AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_PREFERRED` — verification requested if supported (default)
+> - `AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_DISCOURAGED` — verification not requested
+> - `null` / not set — no preference, authenticator decides (default)
 
 #### Additional Configuration
 If you want to customize the component or modify its behavior, you can override the passkeys component in the myProfileComponents method:
